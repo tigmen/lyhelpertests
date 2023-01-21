@@ -65,7 +65,7 @@ public class TelegramBot extends TelegramLongPollingBot{
                     if(msg.hasDocument())
                     {
                         db_connect.db_connect();
-                        db_connect.filedb_insert(msg.getFrom().getId(),msg.getFrom().getUserName(),msg.getDocument().getFileId(),
+                        db_connect.db_insert(msg.getFrom().getId(),msg.getFrom().getUserName(),msg.getDocument().getFileId(),
                                 msg.getDocument().getFileName());
                         Const.telegram.states._state.set(state_find(msg.getFrom().getId()),Const.telegram.states.FILELOAD_NAME);
                         sendMsg(msg.getFrom().getId(),"Введите название конспекта: ");
@@ -78,7 +78,8 @@ public class TelegramBot extends TelegramLongPollingBot{
                     break;
                 case Const.telegram.states.FILELOAD_NAME:
                     db_connect.db_connect();
-                    db_connect.filedb_update(db_connect.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME),msg.getText(),Const.database.userfile.DOCNAME);
+                    db_connect.db_update(Const.database.userfile.NAME,Const.database.userfile.DOCNAME, Const.database.userfile.ID,
+                            db_connect.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME),msg.getText());
                     Const.telegram.states._state.set(state_find(msg.getFrom().getId()),Const.telegram.states.FILELOAD_CLASS);
                     db_connect.db_close();
                     sendMsg(msg.getFrom().getId(),"Материал какого это класса?",keyboardMenu.kb_setbtnclassload());
@@ -274,10 +275,10 @@ public class TelegramBot extends TelegramLongPollingBot{
                 int temp = Integer.parseInt(callback.replace("file_button",""));
                 try {
                     db_connect.db_connect();
-                    String content = "by: @" + db_connect.filedb_findbyid(temp, Const.database.userfile.FROMUSER)
-                            +"\nfile: " + db_connect.filedb_findbyid(temp, Const.database.userfile.DOCNAME)
-                            +"\nclass: " + db_connect.filedb_findbyid(temp, Const.database.userfile.DOCCLASS)
-                            +"\nsubject: " + db_connect.filedb_findbyid(temp, Const.database.userfile.DOCSUBJECT);
+                    String content = "by: @" + db_connect.db_findbyid(Const.database.userfile.NAME,temp, Const.database.userfile.FROMUSER)
+                            +"\nfile: " + db_connect.db_findbyid(Const.database.userfile.NAME,temp, Const.database.userfile.DOCNAME)
+                            +"\nclass: " + db_connect.db_findbyid(Const.database.userfile.NAME,temp, Const.database.userfile.DOCCLASS)
+                            +"\nsubject: " + db_connect.db_findbyid(Const.database.userfile.NAME,temp, Const.database.userfile.DOCSUBJECT);
                     EditMessageText edm = new EditMessageText();
                     edm.setText("Ваш файл:");
                     edm.setMessageId(msg.getMessageId());
@@ -287,7 +288,7 @@ public class TelegramBot extends TelegramLongPollingBot{
                     } catch (TelegramApiException e) {
                         e.printStackTrace();
                     }
-                    sendMsg(id,content, db_connect.filedb_findbyid(temp,Const.database.userfile.DOCID));
+                    sendMsg(id,content, db_connect.db_findbyid(Const.database.userfile.NAME,temp,Const.database.userfile.DOCID));
                     db_connect.db_close();
                 } catch (TelegramApiException e) {
                     e.printStackTrace();
@@ -298,7 +299,8 @@ public class TelegramBot extends TelegramLongPollingBot{
             {
                 int temp = Integer.parseInt(callback.replace("classselect_button",""));
                 db_connect.db_connect();
-                db_connect.filedb_update(db_connect.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME),temp,Const.database.userfile.DOCCLASS);
+                db_connect.db_update(Const.database.userfile.NAME,Const.database.userfile.DOCCLASS,Const.database.userfile.ID,
+                        db_connect.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME),temp);
                 Const.telegram.states._state.set(state_find(id),Const.telegram.states.FILELOAD_SUBJECT);
                 db_connect.db_close();
                 EditMessageText edm = new EditMessageText();
@@ -316,7 +318,8 @@ public class TelegramBot extends TelegramLongPollingBot{
             {
                 String temp = callback.replace("subjbutton","");
                 db_connect.db_connect();
-                db_connect.filedb_update(db_connect.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME),temp,Const.database.userfile.DOCSUBJECT);
+                db_connect.db_update(Const.database.userfile.NAME,Const.database.userfile.DOCSUBJECT,Const.database.userfile.ID,
+                        db_connect.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME),temp);
                 Const.telegram.states._state.set(state_find(id),Const.telegram.states.STD);
                 db_connect.db_close();
                 EditMessageText edm = new EditMessageText();
@@ -351,13 +354,13 @@ public class TelegramBot extends TelegramLongPollingBot{
                 int n = 1;
 
 
-                for (String j : db_connect.filedb_getcolumnS(Const.database.userfile.DOCSUBJECT)) {
+                for (String j : db_connect.db_getcolumnS(Const.database.userfile.NAME,Const.database.userfile.DOCSUBJECT)) {
 
-                    if (j.equals(temp) && (Integer.parseInt(db_connect.filedb_findbyid(n,
+                    if (j.equals(temp) && (Integer.parseInt(db_connect.db_findbyid(Const.database.userfile.NAME,n,
                             Const.database.userfile.DOCCLASS)) == (Const.telegram.states._state.get(state_find(id))))) {
                         List<InlineKeyboardButton> buttonRow = new ArrayList<>();
 
-                        buttonRow.add(kb_setbuttons(db_connect.filedb_findbyid(n, Const.database.userfile.DOCNAME),
+                        buttonRow.add(kb_setbuttons(db_connect.db_findbyid(Const.database.userfile.NAME,n, Const.database.userfile.DOCNAME),
                                 "file_button" + n));
                         rowList.add(buttonRow);
                     }
