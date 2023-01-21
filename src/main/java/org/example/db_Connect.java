@@ -1,15 +1,17 @@
 package org.example;
 
+import java.beans.Customizer;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class db_Connect{
     Connection connection;
     Statement statement;
 //    Подключение к базе данных через jdbc
 //    вставлять перед любым использованием методов с учатием db
-    public void db_connect() {
+    private void db_connect() {
         try
         {
             Class.forName("org.sqlite.JDBC");
@@ -25,7 +27,7 @@ public class db_Connect{
     }
 //    Метод для закрытия базы данных
 //    использовать после любого использования методов с db (то есть открыл - выполнил нужные методы - закрыл)
-    public void db_close()
+    private void db_close()
     {
         try {
             connection.close();
@@ -34,6 +36,22 @@ public class db_Connect{
             throw new RuntimeException(e);
         }
     }
+//    функция для подулючения к дб, подключение выглядит примерно так:
+    /*public void example()
+    {
+        db_Connect db_connect = new db_Connect();
+        db_connect.db_execute(c ->{
+            <логика>
+        });
+    }*/
+//    таким образом думать о открытие закрытие подключения ради экономии ресурсов не нужно)
+    public void db_execute(Consumer<db_Connect> consumer)
+    {
+        this.db_connect();
+        consumer.accept(this);
+        this.db_close();
+    }
+
 //    db_drop() сбрасывает данные все таблиц, обнуляет базу данных короче говоря
 //    если подать на вход строку, название таблицы, сбросит только эту таблицу
     public void db_drop()

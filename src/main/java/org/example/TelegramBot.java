@@ -2,7 +2,6 @@ package org.example;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Message;
@@ -10,21 +9,15 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-
-import javax.ws.rs.HttpMethod;
-import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
+
 
 public class TelegramBot extends TelegramLongPollingBot{
     db_Connect db_connect = new db_Connect();
-
-
     public TelegramBot() {
 
     }
-
     @Override
     public String getBotUsername() {
         return Const.telegram.USERNAME;
@@ -43,56 +36,45 @@ public class TelegramBot extends TelegramLongPollingBot{
         if (update.hasMessage()) {
 
             Message msg = update.getMessage();
-            if(Const.telegram.states._id.indexOf(msg.getFrom().getId()) == -1)
+            if(!Const.telegram.states._id.contains(msg.getFrom().getId()))
             {
                 Const.telegram.states._id.add(msg.getFrom().getId());
                 Const.telegram.states._state.add(Const.telegram.states.STD);
             }
             switch (Const.telegram.states._state.get(state_find(msg.getFrom().getId()))) {
-                case Const.telegram.states.STD:
-                    db_connect.db_connect();
-                    db_connect.db_insert(msg.getFrom().getId(), msg.getFrom().getUserName());
-                    db_connect.db_close();
+                case Const.telegram.states.STD -> {
+                    db_connect.db_execute(c -> c.db_insert(msg.getFrom().getId(), msg.getFrom().getUserName()));
                     if (msg.isCommand()) {
                         commands.handler(msg.getText(), msg);
                     } else if (update.hasCallbackQuery()) {
                         var callback = update.getCallbackQuery();
-                        keyboardMenu.handler(callback.getData(), callback.getFrom().getId(),callback.getMessage());
+                        keyboardMenu.handler(callback.getData(), callback.getFrom().getId(), callback.getMessage());
                     }
-                    break;
+                }
+                case Const.telegram.states.FILELOAD_FILE -> {
+                    if (msg.hasDocument()) {
+                        db_connect.db_execute(c -> c.db_insert(msg.getFrom().getId(), msg.getFrom().getUserName(),
+                                msg.getDocument().getFileId(), msg.getDocument().getFileName()));
 
-                case Const.telegram.states.FILELOAD_FILE:
-                    if(msg.hasDocument())
-                    {
-                        db_connect.db_connect();
-                        db_connect.db_insert(msg.getFrom().getId(),msg.getFrom().getUserName(),msg.getDocument().getFileId(),
-                                msg.getDocument().getFileName());
-                        Const.telegram.states._state.set(state_find(msg.getFrom().getId()),Const.telegram.states.FILELOAD_NAME);
-                        sendMsg(msg.getFrom().getId(),"Введите название конспекта: ");
-                    }
-                    else
-                    {
+                        Const.telegram.states._state.set(state_find(msg.getFrom().getId()), Const.telegram.states.FILELOAD_NAME);
+                        sendMsg(msg.getFrom().getId(), "Введите название конспекта: ");
+                    } else {
                         sendMsg(msg.getFrom().getId(), Const.telegram.msg_strings.FILELOAD_ERROR_NOFILE);
                     }
-                    db_connect.db_close();
-                    break;
-                case Const.telegram.states.FILELOAD_NAME:
-                    db_connect.db_connect();
-                    db_connect.db_update(Const.database.userfile.NAME,Const.database.userfile.DOCNAME, Const.database.userfile.ID,
-                            db_connect.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME),msg.getText());
-                    Const.telegram.states._state.set(state_find(msg.getFrom().getId()),Const.telegram.states.FILELOAD_CLASS);
-                    db_connect.db_close();
-                    sendMsg(msg.getFrom().getId(),"Материал какого это класса?",keyboardMenu.kb_setbtnclassload());
-                    break;
-                case Const.telegram.states.FILELOAD_CLASS:
-                    sendMsg(msg.getFrom().getId(),"Выберите класс");
-                    break;
+                }
+                case Const.telegram.states.FILELOAD_NAME -> {
+                    db_connect.db_execute(c -> c.db_update(Const.database.userfile.NAME, Const.database.userfile.DOCNAME, Const.database.userfile.ID,
+                                    c.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME), msg.getText()));
+                    Const.telegram.states._state.set(state_find(msg.getFrom().getId()), Const.telegram.states.FILELOAD_CLASS);
+                    sendMsg(msg.getFrom().getId(), "Материал какого это класса?", keyboardMenu.kb_setbtnclassload());
+                }
+                case Const.telegram.states.FILELOAD_CLASS -> sendMsg(msg.getFrom().getId(), "Выберите класс");
             }
         }
         else if(update.hasCallbackQuery())
         {
             var cq = update.getCallbackQuery();
-            if(Const.telegram.states._id.indexOf(cq.getFrom().getId()) == -1)
+            if(!Const.telegram.states._id.contains(cq.getFrom().getId()))
             {
                 Const.telegram.states._id.add(cq.getFrom().getId());
                 Const.telegram.states._state.add(Const.telegram.states.STD);
@@ -132,15 +114,9 @@ public class TelegramBot extends TelegramLongPollingBot{
         KeyboardMenu keyboardMenu = new KeyboardMenu();
         public void handler(String command, Message msg)
         {
-            switch (command)
-            {
-                case "/start":
-                    start(msg.getFrom().getId());
-                    break;
-
-                case "/loadfile":
-                    loadfile(msg.getFrom().getId());
-                    break;
+            switch (command) {
+                case "/start" -> start(msg.getFrom().getId());
+                case "/loadfile" -> loadfile(msg.getFrom().getId());
             }
 
         }
@@ -253,56 +229,45 @@ public class TelegramBot extends TelegramLongPollingBot{
 
         public void handler(String callback, Long id, Message msg)
         {
-            switch (callback)
-            {
-                case "start_button":
-                    db_connect.db_connect();
-                    EditMessageText edm = new EditMessageText();
-                    edm.setText("Выберете предмет:");
-                    edm.setReplyMarkup(kb_filesbuttonsset());
-                    edm.setMessageId(msg.getMessageId());
-                    edm.setChatId(msg.getChatId().toString());
-                    try {
-                        execute(edm);
-                    } catch (TelegramApiException e) {
-                        e.printStackTrace();
-                    }
-                    db_connect.db_close();
-                    break;
+            if (callback.equals("start_button")) {
+                EditMessageText edm = new EditMessageText();
+                edm.setText("Выберете предмет:");
+                edm.setReplyMarkup(kb_filesbuttonsset());
+                edm.setMessageId(msg.getMessageId());
+                edm.setChatId(msg.getChatId().toString());
+                try {
+                    execute(edm);
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
             }
-            if(callback.contains("file_button"))
+            else if(callback.contains("file_button"))
             {
                 int temp = Integer.parseInt(callback.replace("file_button",""));
-                try {
-                    db_connect.db_connect();
-                    String content = "by: @" + db_connect.db_findbyid(Const.database.userfile.NAME,temp, Const.database.userfile.FROMUSER)
-                            +"\nfile: " + db_connect.db_findbyid(Const.database.userfile.NAME,temp, Const.database.userfile.DOCNAME)
-                            +"\nclass: " + db_connect.db_findbyid(Const.database.userfile.NAME,temp, Const.database.userfile.DOCCLASS)
-                            +"\nsubject: " + db_connect.db_findbyid(Const.database.userfile.NAME,temp, Const.database.userfile.DOCSUBJECT);
+                    db_connect.db_execute(c -> {String content = "by: @" + c.db_findbyid(Const.database.userfile.NAME,temp, Const.database.userfile.FROMUSER)
+                            +"\nfile: " + c.db_findbyid(Const.database.userfile.NAME,temp, Const.database.userfile.DOCNAME)
+                            +"\nclass: " + c.db_findbyid(Const.database.userfile.NAME,temp, Const.database.userfile.DOCCLASS)
+                            +"\nsubject: " + c.db_findbyid(Const.database.userfile.NAME,temp, Const.database.userfile.DOCSUBJECT);
                     EditMessageText edm = new EditMessageText();
                     edm.setText("Ваш файл:");
                     edm.setMessageId(msg.getMessageId());
                     edm.setChatId(msg.getChatId().toString());
                     try {
                         execute(edm);
+                        sendMsg(id,content, c.db_findbyid(Const.database.userfile.NAME,temp,Const.database.userfile.DOCID));
                     } catch (TelegramApiException e) {
                         e.printStackTrace();
                     }
-                    sendMsg(id,content, db_connect.db_findbyid(Const.database.userfile.NAME,temp,Const.database.userfile.DOCID));
-                    db_connect.db_close();
-                } catch (TelegramApiException e) {
-                    e.printStackTrace();
-                }
+
+            });
                 Const.telegram.states._state.set(state_find(id),Const.telegram.states.STD);
             }
             else if(callback.contains("classselect_button"))
             {
                 int temp = Integer.parseInt(callback.replace("classselect_button",""));
-                db_connect.db_connect();
-                db_connect.db_update(Const.database.userfile.NAME,Const.database.userfile.DOCCLASS,Const.database.userfile.ID,
-                        db_connect.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME),temp);
+                db_connect.db_execute(c -> c.db_update(Const.database.userfile.NAME,Const.database.userfile.DOCCLASS,Const.database.userfile.ID,
+                        c.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME),temp));
                 Const.telegram.states._state.set(state_find(id),Const.telegram.states.FILELOAD_SUBJECT);
-                db_connect.db_close();
                 EditMessageText edm = new EditMessageText();
                 edm.setText("Выберете предмет:");
                 edm.setReplyMarkup(kb_setbtnsubjectload(temp));
@@ -317,11 +282,9 @@ public class TelegramBot extends TelegramLongPollingBot{
             else if(callback.contains("subjbutton"))
             {
                 String temp = callback.replace("subjbutton","");
-                db_connect.db_connect();
-                db_connect.db_update(Const.database.userfile.NAME,Const.database.userfile.DOCSUBJECT,Const.database.userfile.ID,
-                        db_connect.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME),temp);
+                db_connect.db_execute(c -> c.db_update(Const.database.userfile.NAME,Const.database.userfile.DOCSUBJECT,Const.database.userfile.ID,
+                        c.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME),temp));
                 Const.telegram.states._state.set(state_find(id),Const.telegram.states.STD);
-                db_connect.db_close();
                 EditMessageText edm = new EditMessageText();
                 edm.setText("Файл успешно загружен");
                 edm.setMessageId(msg.getMessageId());
@@ -348,40 +311,38 @@ public class TelegramBot extends TelegramLongPollingBot{
             }
             else if(callback.contains("subjectsave")) {
                 String temp = callback.replace("subjectsave", "");
-                db_connect.db_connect();
                 InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
                 List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
-                int n = 1;
+                db_connect.db_execute(c -> {
+                    int n = 1;
+                    for (String j : c.db_getcolumnS(Const.database.userfile.NAME, Const.database.userfile.DOCSUBJECT)) {
 
+                        if (j.equals(temp) && (Integer.parseInt(c.db_findbyid(Const.database.userfile.NAME, n,
+                                Const.database.userfile.DOCCLASS)) == (Const.telegram.states._state.get(state_find(id))))) {
+                            List<InlineKeyboardButton> buttonRow = new ArrayList<>();
 
-                for (String j : db_connect.db_getcolumnS(Const.database.userfile.NAME,Const.database.userfile.DOCSUBJECT)) {
-
-                    if (j.equals(temp) && (Integer.parseInt(db_connect.db_findbyid(Const.database.userfile.NAME,n,
-                            Const.database.userfile.DOCCLASS)) == (Const.telegram.states._state.get(state_find(id))))) {
-                        List<InlineKeyboardButton> buttonRow = new ArrayList<>();
-
-                        buttonRow.add(kb_setbuttons(db_connect.db_findbyid(Const.database.userfile.NAME,n, Const.database.userfile.DOCNAME),
-                                "file_button" + n));
-                        rowList.add(buttonRow);
+                            buttonRow.add(kb_setbuttons(c.db_findbyid(Const.database.userfile.NAME, n, Const.database.userfile.DOCNAME),
+                                    "file_button" + n));
+                            rowList.add(buttonRow);
+                        }
+                        n++;
                     }
-                    n++;
-                }
 
 
-                inlineKeyboardMarkup.setKeyboard(rowList);
-                EditMessageText edm = new EditMessageText();
-                edm.setText("Выберете файл:");
-                edm.setReplyMarkup(inlineKeyboardMarkup);
-                edm.setMessageId(msg.getMessageId());
-                edm.setChatId(msg.getChatId().toString());
-                try {
-                    execute(edm);
-                } catch (TelegramApiException e) {
-                    throw new RuntimeException(e);
-                }
-                db_connect.db_close();
-                Const.telegram.states._state.set(state_find(id),Const.telegram.states.STD);
+                    inlineKeyboardMarkup.setKeyboard(rowList);
+                    EditMessageText edm = new EditMessageText();
+                    edm.setText("Выберете файл:");
+                    edm.setReplyMarkup(inlineKeyboardMarkup);
+                    edm.setMessageId(msg.getMessageId());
+                    edm.setChatId(msg.getChatId().toString());
+                    try {
+                        execute(edm);
+                    } catch (TelegramApiException e) {
+                        throw new RuntimeException(e);
+                    }
 
+                    Const.telegram.states._state.set(state_find(id), Const.telegram.states.STD);
+                });
             }
         }
     }
