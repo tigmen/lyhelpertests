@@ -7,6 +7,8 @@ import java.util.List;
 public class db_Connect{
     Connection connection;
     Statement statement;
+//    Подключение к базе данных через jdbc
+//    вставлять перед любым использованием методов с учатием db
     public void db_connect() {
         try
         {
@@ -21,6 +23,8 @@ public class db_Connect{
             e.printStackTrace();
         }
     }
+//    Метод для закрытия базы данных
+//    использовать после любого использования методов с db (то есть открыл - выполнил нужные методы - закрыл)
     public void db_close()
     {
         try {
@@ -30,7 +34,8 @@ public class db_Connect{
             throw new RuntimeException(e);
         }
     }
-
+//    db_drop() сбрасывает данные все таблиц, обнуляет базу данных короче говоря
+//    если подать на вход строку, название таблицы, сбросит только эту таблицу
     public void db_drop()
     {
         try {
@@ -39,7 +44,36 @@ public class db_Connect{
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+    public void db_drop(String db_name)
+    {
+        try {
+            switch (db_name) {
+                case Const.database.userfile.NAME -> statement.execute(Const.database.userfile.DROP);
+                case Const.database.userdata_table.NAME -> statement.execute(Const.database.userdata_table.DROP);
+            }
 
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+//    находит последний элемент таблицы путем перебора всех элементов
+//    рационально ли это? нихуя подобного
+//    в качестве входных аргументов принимает строку вида "SELECT a,b,c FROM table_name"
+    public int db_lastid(String table_select)
+    {
+        int result = 0;
+        try {
+            ResultSet rs = statement.executeQuery(table_select);
+            while (rs.next())
+            {
+                result = rs.getInt(Const.database.userfile.ID);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 
     public void db_selectAll(){
@@ -59,7 +93,7 @@ public class db_Connect{
     }
     public String filedb_findbyid(int _id, String what)
     {
-        String result = new String();
+        String result = "";
         try {
             ResultSet rs = statement.executeQuery(Const.database.userfile.SELECT);
             while (rs.next()) {
@@ -163,7 +197,7 @@ public class db_Connect{
             ResultSet rs = statement.executeQuery(Const.database.userdata_table.SELECT);
             while (rs.next())
             {
-                if(id.compareTo((Long)rs.getLong(Const.database.userdata_table.USER_ID))==0) id_repeated = true;
+                if(id.compareTo(rs.getLong(Const.database.userdata_table.USER_ID))==0) id_repeated = true;
             }
             if(!id_repeated) {
                 PreparedStatement prst = connection.prepareStatement(Const.database.userdata_table.INSERT);
@@ -195,19 +229,5 @@ public class db_Connect{
             e.printStackTrace();
         }
     }
-    public int db_lastid(String table_select)
-    {
-        int result = 0;
-        try {
-            ResultSet rs = statement.executeQuery(table_select);
-            while (rs.next())
-            {
-                result = rs.getInt(Const.database.userfile.ID);
-            }
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return result;
-    }
 }
