@@ -9,8 +9,11 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 
 public class TelegramBot extends TelegramLongPollingBot{
@@ -66,7 +69,13 @@ public class TelegramBot extends TelegramLongPollingBot{
                     db_connect.db_execute(c -> c.db_update(Const.database.userfile.NAME, Const.database.userfile.DOCNAME, Const.database.userfile.ID,
                                     c.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME), msg.getText()));
                     Const.telegram.states._state.set(state_find(msg.getFrom().getId()), Const.telegram.states.FILELOAD_CLASS);
-                    sendMsg(msg.getFrom().getId(), "Материал какого это класса?", keyboardMenu.kb_setbtnclassload());
+                    sendMsg(msg.getFrom().getId(), "Материал какого это класса?", keyboardMenu.kb_generator(Arrays.asList(7,8,9,10,11),"classselect_button",(arg,c)->
+                    {
+                        List<InlineKeyboardButton> buttonRow = new ArrayList<>();
+                        buttonRow.add(keyboardMenu.kb_setbuttons(Integer.toString(c), arg + c));
+                        return buttonRow;
+                    }));
+
                 }
                 case Const.telegram.states.FILELOAD_CLASS -> sendMsg(msg.getFrom().getId(), "Выберите класс");
             }
@@ -135,12 +144,12 @@ public class TelegramBot extends TelegramLongPollingBot{
     }
 
     public class KeyboardMenu{
+
         public InlineKeyboardMarkup kb_start()
         {
             InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
             List<InlineKeyboardButton> buttonRow = new ArrayList<>();
             List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
-
             buttonRow.add(kb_setbuttons("Просмотреть пользовательские файлы","start_button"));
             rowList.add(buttonRow);
 
@@ -155,84 +164,30 @@ public class TelegramBot extends TelegramLongPollingBot{
             button.setCallbackData(CallbackData);
             return  button;
         }
-
-        public InlineKeyboardMarkup kb_setbtnsubjectload(int _class)
+         interface kb_std<T>
         {
-            InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
-            List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
-            for(String i : Const.telegram.msg_strings.subjects[_class-7])
-            {
-                List<InlineKeyboardButton> buttonRow = new ArrayList<>();
-                buttonRow.add(kb_setbuttons(i,  "subjbutton" + i));
-                rowList.add(buttonRow);
-            }
-            inlineKeyboardMarkup.setKeyboard(rowList);
-            return inlineKeyboardMarkup;
+            public List<InlineKeyboardButton> accept(String arg1, T arg2);
         }
-        public InlineKeyboardMarkup kb_subjectsave(long id)
+        public <T> InlineKeyboardMarkup kb_generator(List<T> list,String arg, kb_std<T> std)
         {
             InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
             List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
-             for(String i : Const.telegram.msg_strings.subjects[Const.telegram.states._state.get(state_find(id))-7])
-            {
-                List<InlineKeyboardButton> buttonRow = new ArrayList<>();
-                buttonRow.add(kb_setbuttons(i,  "subjectsave" + i));
-                rowList.add(buttonRow);
-            }
+            list.forEach(c -> rowList.add(std.accept(arg,c)));
             inlineKeyboardMarkup.setKeyboard(rowList);
             return inlineKeyboardMarkup;
         }
 
-        public InlineKeyboardMarkup kb_filesbuttonsset()
-        {
-
-            InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
-            List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
-            for(int i = 7; i <= 11; i++) {
-                List<InlineKeyboardButton> buttonRow = new ArrayList<>();
-                buttonRow.add(kb_setbuttons(Integer.toString(i), "classsave" + i));
-                rowList.add(buttonRow);
-
-            }
-            inlineKeyboardMarkup.setKeyboard(rowList);
-            return inlineKeyboardMarkup;
-            /*
-            db_connect.db_connect();
-            InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
-            List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
-            int n = 1;
-            for(String i : db_connect.filedb_getcolumn(Const.database.userfile.DOCNAME)) {
-                List<InlineKeyboardButton> buttonRow = new ArrayList<>();
-                buttonRow.add(kb_setbuttons(i, "file_button" + n));
-                rowList.add(buttonRow);
-                n++;
-            }
-            inlineKeyboardMarkup.setKeyboard(rowList);
-            db_connect.db_close();
-            return inlineKeyboardMarkup;
-            */
-        }
-
-        public InlineKeyboardMarkup kb_setbtnclassload()
-        {
-            InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
-            List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
-            for(int i = 7; i <= 11; i++)
-            {
-                List<InlineKeyboardButton> buttonRow = new ArrayList<>();
-                buttonRow.add(kb_setbuttons(Integer.toString(i), "classselect_button" + i));
-                rowList.add(buttonRow);
-            }
-            inlineKeyboardMarkup.setKeyboard(rowList);
-            return inlineKeyboardMarkup;
-        }
 
         public void handler(String callback, Long id, Message msg)
         {
             if (callback.equals("start_button")) {
                 EditMessageText edm = new EditMessageText();
                 edm.setText("Выберете предмет:");
-                edm.setReplyMarkup(kb_filesbuttonsset());
+                edm.setReplyMarkup(kb_generator(Arrays.asList(7,8,9,10,11),"classsave", (arg, c) ->{
+                    List<InlineKeyboardButton> buttonRow = new ArrayList<>();
+                    buttonRow.add(kb_setbuttons(Integer.toString(c), arg + c));
+                    return  buttonRow;
+                }));
                 edm.setMessageId(msg.getMessageId());
                 edm.setChatId(msg.getChatId().toString());
                 try {
@@ -270,7 +225,11 @@ public class TelegramBot extends TelegramLongPollingBot{
                 Const.telegram.states._state.set(state_find(id),Const.telegram.states.FILELOAD_SUBJECT);
                 EditMessageText edm = new EditMessageText();
                 edm.setText("Выберете предмет:");
-                edm.setReplyMarkup(kb_setbtnsubjectload(temp));
+                edm.setReplyMarkup(kb_generator(Arrays.asList(Const.telegram.msg_strings.subjects[temp-7]),"subjbutton",(arg,c) -> {
+                    List<InlineKeyboardButton> buttonRow = new ArrayList<>();
+                    buttonRow.add(kb_setbuttons(c.toString(),  arg + c));
+                    return buttonRow;
+                }));
                 edm.setMessageId(msg.getMessageId());
                 edm.setChatId(msg.getChatId().toString());
                 try {
@@ -300,7 +259,11 @@ public class TelegramBot extends TelegramLongPollingBot{
                 Const.telegram.states._state.set(state_find(id),Const.telegram.states.CLASS_SELECTED[temp-7]);
                 EditMessageText edm = new EditMessageText();
                 edm.setText("Выберете предмет:");
-                edm.setReplyMarkup(kb_subjectsave(msg.getChatId()));
+                edm.setReplyMarkup(kb_generator(Arrays.asList(Const.telegram.msg_strings.subjects[Const.telegram.states._state.get(state_find(id))-7]),"subjectsave",(arg, c) ->{
+                    List<InlineKeyboardButton> buttonRow = new ArrayList<>();
+                    buttonRow.add(kb_setbuttons(c,  arg + c));
+                    return buttonRow;
+                }));
                 edm.setMessageId(msg.getMessageId());
                 edm.setChatId(msg.getChatId().toString());
                 try {
