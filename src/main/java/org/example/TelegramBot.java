@@ -86,10 +86,8 @@ public class TelegramBot extends TelegramLongPollingBot{
                         int n = 1;
                         for (String i : c.lineralsearch(Const.database.userfile.NAME,Const.database.userfile.DOCNAME,msg.getText().toLowerCase())) {
                                 List<InlineKeyboardButton> buttonRow = new ArrayList<>();
-                                System.out.println(i);
-                                System.out.println(c.db_findbyid(Const.database.userfile.NAME,Const.database.userfile.DOCNAME, i, Const.database.userfile.DOCNAME));
-                                buttonRow.add(km.kb_setbuttons(c.db_findbyid(Const.database.userfile.NAME,Const.database.userfile.DOCNAME, i, Const.database.userfile.DOCNAME),
-                                        "file_button" + n));
+                                buttonRow.add(km.kb_setbuttons(i, "file_button"
+                                        + c.db_findbyid(Const.database.userfile.NAME,Const.database.userfile.DOCNAME, i, Const.database.userfile.ID)));
                                 rowList.add(buttonRow);
                                 n++;
                         }
