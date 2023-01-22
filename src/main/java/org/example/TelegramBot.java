@@ -226,12 +226,9 @@ public class TelegramBot extends TelegramLongPollingBot{
                             +"\nfile: " + c.db_findbyid(Const.database.userfile.NAME,temp, Const.database.userfile.DOCNAME)
                             +"\nclass: " + c.db_findbyid(Const.database.userfile.NAME,temp, Const.database.userfile.DOCCLASS)
                             +"\nsubject: " + c.db_findbyid(Const.database.userfile.NAME,temp, Const.database.userfile.DOCSUBJECT);
-                    EditMessageText edm = new EditMessageText();
-                    edm.setText("Ваш файл:");
-                    edm.setMessageId(msg.getMessageId());
-                    edm.setChatId(msg.getChatId().toString());
+
+                        editMsg(msg,"Ваш файл:");
                     try {
-                        execute(edm);
                         sendMsg(id,content, c.db_findbyid(Const.database.userfile.NAME,temp,Const.database.userfile.DOCID));
                     } catch (TelegramApiException e) {
                         e.printStackTrace();
@@ -246,20 +243,11 @@ public class TelegramBot extends TelegramLongPollingBot{
                 db_connect.db_execute(c -> c.db_update(Const.database.userfile.NAME,Const.database.userfile.DOCCLASS,Const.database.userfile.ID,
                         c.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME),temp));
                 Const.telegram.states._state.set(state_find(id),Const.telegram.states.FILELOAD_SUBJECT);
-                EditMessageText edm = new EditMessageText();
-                edm.setText("Выберете предмет:");
-                edm.setReplyMarkup(kb_generator(Arrays.asList(Const.telegram.msg_strings.subjects[temp-7]),"subjbutton",(arg,c) -> {
-                    List<InlineKeyboardButton> buttonRow = new ArrayList<>();
-                    buttonRow.add(kb_setbuttons(c.toString(),  arg + c));
-                    return buttonRow;
-                }));
-                edm.setMessageId(msg.getMessageId());
-                edm.setChatId(msg.getChatId().toString());
-                try {
-                    execute(edm);
-                } catch (TelegramApiException e) {
-                    e.printStackTrace();
-                }
+                editMsg(msg, "Выберите предмет:",kb_generator(Arrays.asList(Const.telegram.msg_strings.subjects[temp-7]),"subjbutton",(arg,c) -> {
+                            List<InlineKeyboardButton> buttonRow = new ArrayList<>();
+                            buttonRow.add(kb_setbuttons(c.toString(), arg + c));
+                            return buttonRow;
+                        }));
             }
             else if(callback.contains("subjbutton"))
             {
@@ -267,33 +255,16 @@ public class TelegramBot extends TelegramLongPollingBot{
                 db_connect.db_execute(c -> c.db_update(Const.database.userfile.NAME,Const.database.userfile.DOCSUBJECT,Const.database.userfile.ID,
                         c.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME),temp));
                 Const.telegram.states._state.set(state_find(id),Const.telegram.states.STD);
-                EditMessageText edm = new EditMessageText();
-                edm.setText("Файл успешно загружен");
-                edm.setMessageId(msg.getMessageId());
-                edm.setChatId(msg.getChatId().toString());
-                try {
-                    execute(edm);
-                } catch (TelegramApiException e) {
-                    e.printStackTrace();
-                }
+                editMsg(msg, "Файл успешно загружен");
             }
             else if(callback.contains("classsave")) {
                 int temp = Integer.parseInt(callback.replace("classsave", ""));
                 Const.telegram.states._state.set(state_find(id),Const.telegram.states.CLASS_SELECTED[temp-7]);
-                EditMessageText edm = new EditMessageText();
-                edm.setText("Выберете предмет:");
-                edm.setReplyMarkup(kb_generator(Arrays.asList(Const.telegram.msg_strings.subjects[Const.telegram.states._state.get(state_find(id))-7]),"subjectsave",(arg, c) ->{
+                editMsg(msg, "Выберите предмет:",kb_generator(Arrays.asList(Const.telegram.msg_strings.subjects[Const.telegram.states._state.get(state_find(id))-7]),"subjectsave",(arg, c) ->{
                     List<InlineKeyboardButton> buttonRow = new ArrayList<>();
                     buttonRow.add(kb_setbuttons(c,  arg + c));
                     return buttonRow;
                 }));
-                edm.setMessageId(msg.getMessageId());
-                edm.setChatId(msg.getChatId().toString());
-                try {
-                    execute(edm);
-                } catch (TelegramApiException e) {
-                    e.printStackTrace();
-                }
             }
             else if(callback.contains("subjectsave")) {
                 String temp = callback.replace("subjectsave", "");
@@ -313,20 +284,8 @@ public class TelegramBot extends TelegramLongPollingBot{
                         }
                         n++;
                     }
-
-
                     inlineKeyboardMarkup.setKeyboard(rowList);
-                    EditMessageText edm = new EditMessageText();
-                    edm.setText("Выберете файл:");
-                    edm.setReplyMarkup(inlineKeyboardMarkup);
-                    edm.setMessageId(msg.getMessageId());
-                    edm.setChatId(msg.getChatId().toString());
-                    try {
-                        execute(edm);
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-
+                    editMsg(msg, "Выберите файл:",inlineKeyboardMarkup);
                     Const.telegram.states._state.set(state_find(id), Const.telegram.states.STD);
                 });
             }
