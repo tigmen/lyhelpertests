@@ -119,6 +119,34 @@ public class TelegramBot extends TelegramLongPollingBot{
             e.printStackTrace();
         }
     }
+
+    public void editMsg(Message msg, String content, InlineKeyboardMarkup inlineKeyboardMarkup){
+        EditMessageText edm = new EditMessageText();
+        edm.setText(content);
+        edm.setMessageId(msg.getMessageId());
+        edm.setChatId(msg.getChatId().toString());
+        edm.setReplyMarkup(inlineKeyboardMarkup);
+        try {
+            execute(edm);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void editMsg(Message msg, String content){
+        EditMessageText edm = new EditMessageText();
+        edm.setText(content);
+        edm.setMessageId(msg.getMessageId());
+        edm.setChatId(msg.getChatId().toString());
+        try {
+            execute(edm);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
     public class Commands {
         KeyboardMenu keyboardMenu = new KeyboardMenu();
         public void handler(String command, Message msg)
@@ -178,23 +206,18 @@ public class TelegramBot extends TelegramLongPollingBot{
         }
 
 
+
         public void handler(String callback, Long id, Message msg)
         {
             if (callback.equals("start_button")) {
-                EditMessageText edm = new EditMessageText();
-                edm.setText("Выберете предмет:");
-                edm.setReplyMarkup(kb_generator(Arrays.asList(7,8,9,10,11),"classsave", (arg, c) ->{
+                InlineKeyboardMarkup KeyboardMarkup = kb_generator(Arrays.asList(7,8,9,10,11),"classsave", (arg, c) ->{
                     List<InlineKeyboardButton> buttonRow = new ArrayList<>();
                     buttonRow.add(kb_setbuttons(Integer.toString(c), arg + c));
                     return  buttonRow;
-                }));
-                edm.setMessageId(msg.getMessageId());
-                edm.setChatId(msg.getChatId().toString());
-                try {
-                    execute(edm);
-                } catch (TelegramApiException e) {
-                    e.printStackTrace();
-                }
+                });
+                editMsg(msg, "Выберете предмет:", KeyboardMarkup);
+        }
+            else if (callback.equals("classsave")) {
             }
             else if(callback.contains("file_button"))
             {
