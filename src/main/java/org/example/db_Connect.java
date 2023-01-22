@@ -1,5 +1,7 @@
 package org.example;
 
+import org.checkerframework.checker.units.qual.A;
+
 import java.beans.Customizer;
 import java.sql.*;
 import java.util.ArrayList;
@@ -184,22 +186,21 @@ public class db_Connect{
         try {
             switch (table_name) {
                 case Const.database.userfile.NAME -> {
+
                     ResultSet rs = statement.executeQuery(Const.database.userfile.SELECT);
                     while (rs.next()) {
                         if (rs.getInt(Const.database.userfile.ID) == _id)
                             result = rs.getString(what);
-
-                        rs.close();
                     }
+                    rs.close();
                 }
                 case Const.database.userdata_table.NAME -> {
                     ResultSet _rs = statement.executeQuery(Const.database.userdata_table.SELECT);
                     while (_rs.next()) {
                         if (_rs.getInt(Const.database.userfile.ID) == _id)
                             result = _rs.getString(what);
-
-                        _rs.close();
                     }
+                    _rs.close();
                 }
             }
         }
@@ -208,6 +209,62 @@ public class db_Connect{
         }
             return result;
         }
+    public String db_findbyid(String table_name,String where_id,String _id, String what) {
+        String result = "";
+        try {
+            switch (table_name) {
+                case Const.database.userfile.NAME -> {
+
+                    ResultSet rs = statement.executeQuery(Const.database.userfile.SELECT);
+                    while (rs.next()) {
+                        if (rs.getString(where_id).equals(_id))
+                            result = rs.getString(what);
+                    }
+                    rs.close();
+                }
+                case Const.database.userdata_table.NAME -> {
+                    ResultSet _rs = statement.executeQuery(Const.database.userdata_table.SELECT);
+                    while (_rs.next()) {
+                        if (_rs.getString(where_id).equals(_id))
+                            result = _rs.getString(what);
+                    }
+                    _rs.close();
+                }
+            }
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+    public String db_findbyid(String table_name,String where_id,int _id, String what) {
+        String result = "";
+        try {
+            switch (table_name) {
+                case Const.database.userfile.NAME -> {
+
+                    ResultSet rs = statement.executeQuery(Const.database.userfile.SELECT);
+                    while (rs.next()) {
+                        if (rs.getInt(where_id) == _id)
+                            result = rs.getString(what);
+                    }
+                    rs.close();
+                }
+                case Const.database.userdata_table.NAME -> {
+                    ResultSet _rs = statement.executeQuery(Const.database.userdata_table.SELECT);
+                    while (_rs.next()) {
+                        if (_rs.getInt(where_id) == _id)
+                            result = _rs.getString(what);
+                    }
+                    _rs.close();
+                }
+            }
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
 //        метод изменяет значение строчки line_id=id в столбце columnid таблицы table_name на content
     public void db_update(String table_name, String columnid, String line_id,Integer id, String content)
     {
@@ -230,6 +287,17 @@ public class db_Connect{
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+//    алгоритм линейного поиска по подстроке
+    public List<String> lineralsearch(String table_name,String columnid, String substring)
+    {
+        List<String> result = new ArrayList<>();
+        List<String> from = db_getcolumnS(table_name, columnid);
+        from.forEach(c ->{
+            if(c.toLowerCase().contains(substring)) result.add(c);
+        });
+        return result;
     }
 //    далее идет легаси, который я использовать настоятельно не рекомендую!
 //    не иди сюда, это ситуативная хуйня, не иди
@@ -257,7 +325,11 @@ public class db_Connect{
                 System.out.println(rs.getInt(Const.database.userfile.ID)+ "\t" +
                         rs.getLong(Const.database.userfile.FROMUSEID) +"\t"+
                         rs.getString(Const.database.userfile.FROMUSER) +"\t"+
-                        rs.getString(Const.database.userfile.DOCID));
+                        rs.getString(Const.database.userfile.DOCID) +"\t"+
+                        rs.getString(Const.database.userfile.DOCNAME) +"\t"+
+                        rs.getInt(Const.database.userfile.DOCCLASS) +"\t"+
+                        rs.getString(Const.database.userfile.DOCSUBJECT) +"\t"+
+                        rs.getString(Const.database.userfile.DOCTOPIC));
             }
             rs.close();
         } catch (SQLException e) {

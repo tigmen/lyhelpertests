@@ -37,6 +37,8 @@ public class Const {
             public static final int FILELOAD_SUBJECT = 4;
             public static final int FILELOAD_TOPIC = 5; // потом реализую
 
+            public static final int WAITING_SEARCH = 6;
+
             public static final int CLASS_SELECTED[] = {7,8,9,10,11};
 
         }

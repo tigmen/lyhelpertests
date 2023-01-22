@@ -1,4 +1,5 @@
 package org.example;
+import org.checkerframework.checker.units.qual.C;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -47,6 +48,7 @@ public class TelegramBot extends TelegramLongPollingBot{
             switch (Const.telegram.states._state.get(state_find(msg.getFrom().getId()))) {
                 case Const.telegram.states.STD -> {
                     db_connect.db_execute(c -> c.db_insert(msg.getFrom().getId(), msg.getFrom().getUserName()));
+                    db_connect.db_execute(c -> db_connect.lineralsearch(Const.database.userfile.NAME, Const.database.userfile.DOCNAME, "Коллоквиум"));
                     if (msg.isCommand()) {
                         commands.handler(msg.getText(), msg);
                     } else if (update.hasCallbackQuery()) {
@@ -69,15 +71,33 @@ public class TelegramBot extends TelegramLongPollingBot{
                     db_connect.db_execute(c -> c.db_update(Const.database.userfile.NAME, Const.database.userfile.DOCNAME, Const.database.userfile.ID,
                                     c.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME), msg.getText()));
                     Const.telegram.states._state.set(state_find(msg.getFrom().getId()), Const.telegram.states.FILELOAD_CLASS);
-                    sendMsg(msg.getFrom().getId(), "Материал какого это класса?", keyboardMenu.kb_generator(Arrays.asList(7,8,9,10,11),"classselect_button",(arg,c)->
-                    {
-                        List<InlineKeyboardButton> buttonRow = new ArrayList<>();
-                        buttonRow.add(keyboardMenu.kb_setbuttons(Integer.toString(c), arg + c));
-                        return buttonRow;
-                    }));
+                        sendMsg(msg.getFrom().getId(), "Материал какого это класса?", new InlineKeyboardMarkup(keyboardMenu.kb_generator(Arrays.asList(7,8,9,10,11),"classselect_button",null)));
 
                 }
                 case Const.telegram.states.FILELOAD_CLASS -> sendMsg(msg.getFrom().getId(), "Выберите класс");
+                case Const.telegram.states.WAITING_SEARCH ->
+                {
+                    Const.telegram.states._state.set(state_find(msg.getFrom().getId()),Const.telegram.states.STD);
+
+                    db_connect.db_execute(c -> {
+                        KeyboardMenu km = new KeyboardMenu();
+                        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+                        List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
+                        int n = 1;
+                        for (String i : c.lineralsearch(Const.database.userfile.NAME,Const.database.userfile.DOCNAME,msg.getText().toLowerCase())) {
+                                List<InlineKeyboardButton> buttonRow = new ArrayList<>();
+                                System.out.println(i);
+                                System.out.println(c.db_findbyid(Const.database.userfile.NAME,Const.database.userfile.DOCNAME, i, Const.database.userfile.DOCNAME));
+                                buttonRow.add(km.kb_setbuttons(c.db_findbyid(Const.database.userfile.NAME,Const.database.userfile.DOCNAME, i, Const.database.userfile.DOCNAME),
+                                        "file_button" + n));
+                                rowList.add(buttonRow);
+                                n++;
+                        }
+                        inlineKeyboardMarkup.setKeyboard(rowList);
+                        sendMsg(msg.getChatId(), "Выберите файл:",inlineKeyboardMarkup);
+                        Const.telegram.states._state.set(state_find(msg.getChatId()), Const.telegram.states.STD);
+                    });
+                }
             }
         }
         else if(update.hasCallbackQuery())
@@ -196,27 +216,38 @@ public class TelegramBot extends TelegramLongPollingBot{
         {
             public List<InlineKeyboardButton> accept(String arg1, T arg2);
         }
-        public <T> InlineKeyboardMarkup kb_generator(List<T> list,String arg, kb_std<T> std)
+        public <T> List<List<InlineKeyboardButton>> kb_generator(List<T> list,String arg, kb_std<T> std)
         {
-            InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
             List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
-            list.forEach(c -> rowList.add(std.accept(arg,c)));
-            inlineKeyboardMarkup.setKeyboard(rowList);
-            return inlineKeyboardMarkup;
+            switch (std) {
+                case null -> list.forEach(c ->{
+                    List<InlineKeyboardButton> buttonRow = new ArrayList<>();
+                    buttonRow.add(kb_setbuttons(c.toString(),  arg + c));
+                    rowList.add(buttonRow);
+                });
+                default -> list.forEach(c -> rowList.add(std.accept(arg,c)));
+            }
+            return rowList;
         }
-
 
 
         public void handler(String callback, Long id, Message msg)
         {
             if (callback.equals("start_button")) {
-                InlineKeyboardMarkup KeyboardMarkup = kb_generator(Arrays.asList(7,8,9,10,11),"classsave", (arg, c) ->{
+
+                List<List<InlineKeyboardButton>> buttons = kb_generator(Arrays.asList(7,8,9,10,11),"classsave", (arg, c) ->{
                     List<InlineKeyboardButton> buttonRow = new ArrayList<>();
                     buttonRow.add(kb_setbuttons(Integer.toString(c), arg + c));
                     return  buttonRow;
                 });
-                editMsg(msg, "Выберете предмет:", KeyboardMarkup);
+                buttons.add(Arrays.asList(kb_setbuttons("Поиск", "search")));
+                editMsg(msg, "Выберете предмет:", new InlineKeyboardMarkup(buttons));
         }
+            else if(callback.equals("search"))
+            {
+                editMsg(msg,"Введите название или часть названия конспекта, который ищите:");
+                Const.telegram.states._state.set(state_find(id),Const.telegram.states.WAITING_SEARCH);
+            }
             else if (callback.equals("classsave")) {
             }
             else if(callback.contains("file_button"))
@@ -243,11 +274,11 @@ public class TelegramBot extends TelegramLongPollingBot{
                 db_connect.db_execute(c -> c.db_update(Const.database.userfile.NAME,Const.database.userfile.DOCCLASS,Const.database.userfile.ID,
                         c.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME),temp));
                 Const.telegram.states._state.set(state_find(id),Const.telegram.states.FILELOAD_SUBJECT);
-                editMsg(msg, "Выберите предмет:",kb_generator(Arrays.asList(Const.telegram.msg_strings.subjects[temp-7]),"subjbutton",(arg,c) -> {
+                editMsg(msg, "Выберите предмет:",new InlineKeyboardMarkup(kb_generator(Arrays.asList(Const.telegram.msg_strings.subjects[temp-7]),"subjbutton",(arg,c) -> {
                             List<InlineKeyboardButton> buttonRow = new ArrayList<>();
                             buttonRow.add(kb_setbuttons(c.toString(), arg + c));
                             return buttonRow;
-                        }));
+                        })));
             }
             else if(callback.contains("subjbutton"))
             {
@@ -260,11 +291,7 @@ public class TelegramBot extends TelegramLongPollingBot{
             else if(callback.contains("classsave")) {
                 int temp = Integer.parseInt(callback.replace("classsave", ""));
                 Const.telegram.states._state.set(state_find(id),Const.telegram.states.CLASS_SELECTED[temp-7]);
-                editMsg(msg, "Выберите предмет:",kb_generator(Arrays.asList(Const.telegram.msg_strings.subjects[Const.telegram.states._state.get(state_find(id))-7]),"subjectsave",(arg, c) ->{
-                    List<InlineKeyboardButton> buttonRow = new ArrayList<>();
-                    buttonRow.add(kb_setbuttons(c,  arg + c));
-                    return buttonRow;
-                }));
+                editMsg(msg, "Выберите предмет:",new InlineKeyboardMarkup(kb_generator(Arrays.asList(Const.telegram.msg_strings.subjects[Const.telegram.states._state.get(state_find(id))-7]),"subjectsave",null)));
             }
             else if(callback.contains("subjectsave")) {
                 String temp = callback.replace("subjectsave", "");
