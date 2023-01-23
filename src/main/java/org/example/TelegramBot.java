@@ -1,4 +1,5 @@
 package org.example;
+import org.apache.commons.io.FileUtils;
 import org.checkerframework.checker.units.qual.C;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
@@ -11,6 +12,14 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -83,13 +92,11 @@ public class TelegramBot extends TelegramLongPollingBot{
                         KeyboardMenu km = new KeyboardMenu();
                         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
                         List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
-                        int n = 1;
                         for (String i : c.lineralsearch(Const.database.userfile.NAME,Const.database.userfile.DOCNAME,msg.getText().toLowerCase())) {
                                 List<InlineKeyboardButton> buttonRow = new ArrayList<>();
                                 buttonRow.add(km.kb_setbuttons(i, "file_button"
                                         + c.db_findbyid(Const.database.userfile.NAME,Const.database.userfile.DOCNAME, i, Const.database.userfile.ID)));
                                 rowList.add(buttonRow);
-                                n++;
                         }
                         inlineKeyboardMarkup.setKeyboard(rowList);
                         sendMsg(msg.getChatId(), "Выберите файл:",inlineKeyboardMarkup);
@@ -137,7 +144,23 @@ public class TelegramBot extends TelegramLongPollingBot{
             e.printStackTrace();
         }
     }
+    public void sendMsg(Long id, String content, int timetable_id,int class_id)
+    {
+        try {
+            int middleman = class_id+7;
+            File temp_file = new File(middleman+"-"+Const.telegram.msg_strings.timetablesindex[class_id][timetable_id] +".pdf");
+            FileUtils.copyURLToFile(new URL(Const.telegram.msg_strings.timetablesurl[class_id][timetable_id]), temp_file);
+            SendDocument msg = new SendDocument();
+            msg.setChatId(id.toString());
+            msg.setDocument(new InputFile(temp_file));
+            msg.setCaption(content);
+            execute(msg);
+            temp_file.delete();
+        } catch (IOException | TelegramApiException e) {
+            e.printStackTrace();
+        }
 
+    }
     public void editMsg(Message msg, String content, InlineKeyboardMarkup inlineKeyboardMarkup){
         EditMessageText edm = new EditMessageText();
         edm.setText(content);
@@ -172,6 +195,28 @@ public class TelegramBot extends TelegramLongPollingBot{
             switch (command) {
                 case "/start" -> start(msg.getFrom().getId());
                 case "/loadfile" -> loadfile(msg.getFrom().getId());
+                case "/search" -> {
+                    sendMsg(msg.getFrom().getId(),"Введите название или часть названия конспекта, который ищите:");
+                    Const.telegram.states._state.set(state_find(msg.getChatId()),Const.telegram.states.WAITING_SEARCH);
+                }
+                case "/timetable" -> {
+                    sendMsg(msg.getFrom().getId(), "В разработке");
+                    List<List<InlineKeyboardButton>> buttons = keyboardMenu.kb_generator(Arrays.asList(7,8,9,10,11),"classtimetable", (arg, c) ->{
+                        List<InlineKeyboardButton> buttonRow = new ArrayList<>();
+                        buttonRow.add(keyboardMenu.kb_setbuttons(Integer.toString(c), arg + c));
+                        return  buttonRow;
+                    });
+                    sendMsg(msg.getFrom().getId(), "Выберете класс:", new InlineKeyboardMarkup(buttons));
+                }
+                case "/library" ->{
+                    List<List<InlineKeyboardButton>> buttons = keyboardMenu.kb_generator(Arrays.asList(7,8,9,10,11),"classsave", (arg, c) ->{
+                        List<InlineKeyboardButton> buttonRow = new ArrayList<>();
+                        buttonRow.add(keyboardMenu.kb_setbuttons(Integer.toString(c), arg + c));
+                        return  buttonRow;
+                    });
+                    buttons.add(Arrays.asList(keyboardMenu.kb_setbuttons("Поиск", "search")));
+                    sendMsg(msg.getChatId(), "Выберете класс:", new InlineKeyboardMarkup(buttons));
+                }
             }
 
         }
@@ -179,7 +224,6 @@ public class TelegramBot extends TelegramLongPollingBot{
         {
             Const.telegram.states._state.set(state_find(id), Const.telegram.states.STD);
             sendMsg(id,Const.telegram.msg_strings.START_TEXT,keyboardMenu.kb_start());
-
         }
 
         void loadfile(Long id)
@@ -198,7 +242,9 @@ public class TelegramBot extends TelegramLongPollingBot{
             List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
             buttonRow.add(kb_setbuttons("Просмотреть пользовательские файлы","start_button"));
             rowList.add(buttonRow);
-
+            buttonRow = new ArrayList<>();
+            buttonRow.add(kb_setbuttons("Рассписание","timetable_button"));
+            rowList.add(buttonRow);
             inlineKeyboardMarkup.setKeyboard(rowList);
             return inlineKeyboardMarkup;
         }
@@ -217,13 +263,14 @@ public class TelegramBot extends TelegramLongPollingBot{
         public <T> List<List<InlineKeyboardButton>> kb_generator(List<T> list,String arg, kb_std<T> std)
         {
             List<List<InlineKeyboardButton>> rowList = new ArrayList<>();
-            switch (std) {
-                case null -> list.forEach(c ->{
+            if (std == null) {
+                list.forEach(c -> {
                     List<InlineKeyboardButton> buttonRow = new ArrayList<>();
-                    buttonRow.add(kb_setbuttons(c.toString(),  arg + c));
+                    buttonRow.add(kb_setbuttons(c.toString(), arg + c));
                     rowList.add(buttonRow);
                 });
-                default -> list.forEach(c -> rowList.add(std.accept(arg,c)));
+            } else {
+                list.forEach(c -> rowList.add(std.accept(arg, c)));
             }
             return rowList;
         }
@@ -239,12 +286,22 @@ public class TelegramBot extends TelegramLongPollingBot{
                     return  buttonRow;
                 });
                 buttons.add(Arrays.asList(kb_setbuttons("Поиск", "search")));
-                editMsg(msg, "Выберете предмет:", new InlineKeyboardMarkup(buttons));
+                editMsg(msg, "Выберете класс:", new InlineKeyboardMarkup(buttons));
         }
             else if(callback.equals("search"))
             {
                 editMsg(msg,"Введите название или часть названия конспекта, который ищите:");
                 Const.telegram.states._state.set(state_find(id),Const.telegram.states.WAITING_SEARCH);
+            }
+            else if(callback.equals("timetable_button"))
+            {
+                sendMsg(msg.getChatId(), "В разработке");
+                List<List<InlineKeyboardButton>> buttons = kb_generator(Arrays.asList(7,8,9,10,11),"classtimetable", (arg, c) ->{
+                    List<InlineKeyboardButton> buttonRow = new ArrayList<>();
+                    buttonRow.add(kb_setbuttons(Integer.toString(c), arg + c));
+                    return  buttonRow;
+                });
+                sendMsg(msg.getChatId(), "Выберете класс:", new InlineKeyboardMarkup(buttons));
             }
             else if (callback.equals("classsave")) {
             }
@@ -272,11 +329,26 @@ public class TelegramBot extends TelegramLongPollingBot{
                 db_connect.db_execute(c -> c.db_update(Const.database.userfile.NAME,Const.database.userfile.DOCCLASS,Const.database.userfile.ID,
                         c.db_lastid("SELECT ID FROM " + Const.database.userfile.NAME),temp));
                 Const.telegram.states._state.set(state_find(id),Const.telegram.states.FILELOAD_SUBJECT);
-                editMsg(msg, "Выберите предмет:",new InlineKeyboardMarkup(kb_generator(Arrays.asList(Const.telegram.msg_strings.subjects[temp-7]),"subjbutton",(arg,c) -> {
-                            List<InlineKeyboardButton> buttonRow = new ArrayList<>();
-                            buttonRow.add(kb_setbuttons(c.toString(), arg + c));
-                            return buttonRow;
-                        })));
+                editMsg(msg, "Выберите предмет:",new InlineKeyboardMarkup(kb_generator(Arrays.asList(Const.telegram.msg_strings.subjects[temp-7]),"subjbutton",null)));
+            }
+            else if(callback.contains("classtimetable"))
+            {
+                int temp = Integer.parseInt(callback.replace("classtimetable",""));
+                Const.telegram.states._state.set(state_find(id),Const.telegram.states.CLASS_TIMETABLE[temp-7]);
+                editMsg(msg, "Выберите букву класса:",new InlineKeyboardMarkup(kb_generator(Arrays.asList(Const.telegram.msg_strings.timetablesindex[temp-7]),"indextimetable",(arg, c) -> {
+                    List<InlineKeyboardButton> buttonRow = new ArrayList<>();
+                    buttonRow.add(kb_setbuttons(temp + c  , arg + c));
+                    return buttonRow;
+                })));
+            }
+            else if(callback.contains("indextimetable"))
+            {
+                String temp = callback.replace("indextimetable","");
+                editMsg(msg,"Ваше расписание:");
+                sendMsg(msg.getChatId(),"",
+                        Arrays.asList(Const.telegram.msg_strings.timetablesindex[Const.telegram.states._state.get((state_find(id)))-7]).indexOf(temp),
+                        Const.telegram.states._state.get((state_find(id)))-7);
+                Const.telegram.states._state.set(state_find(id),Const.telegram.states.STD);
             }
             else if(callback.contains("subjbutton"))
             {

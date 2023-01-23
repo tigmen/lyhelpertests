@@ -5,9 +5,9 @@ import java.util.List;
 
 public class Const {
     //telegram settings
-    public class telegram {
-        public static final String USERNAME = "@lyceumhelperbot";
-        public static final String TOKEN = "5847776986:AAEcPB9fB0clRVfrhNCX6kaugHbLTGOy2jQ";
+    public static class telegram {
+        public static final String USERNAME = "@lyceumgdz_bot";
+        public static final String TOKEN = "5331171819:AAHb7EFhG0ZaLmtaNmr6MdxHtRrcQmFtxmI";
         public class msg_strings
         {
             public static final String START_TEXT = "Вас приветствует lyceumhelper, свободная площадка с обучающими материалами";
@@ -22,9 +22,56 @@ public class Const {
                     {"Математика","Физика","История","Информатика","Русский язык","Обществознание","География","Биология","ОБЖ","Химия"},
                     {"Математика","Физика","История","Информатика","Русский язык","Обществознание","География","Биология","ОБЖ","Химия"}
             };
-        }
 
-        public class states
+            public static final String[][] timetablesurl = {
+                    {
+                            "https://1502.mskobr.ru/files/rasp/alpha/7%D0%93.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/7%D0%94.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/7%D0%95.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/7%D0%96.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/7%D0%97.pdf",
+                    }, {
+                            "https://1502.mskobr.ru/files/rasp/alpha/8%D0%93.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/8%D0%94.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/8%D0%95.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/8%D0%96.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/8%D0%97.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/8%D0%98.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/8%D0%99.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/8%D0%A7.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/8%D0%A8.pdf",
+                    }, {
+                            "https://1502.mskobr.ru/files/rasp/alpha/9%D0%92.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/9%D0%93.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/9%D0%94.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/9%D0%95.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/9%D0%96.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/9%D0%97.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/9%D0%98.pdf",
+                    }, {
+                            "https://1502.mskobr.ru/files/rasp/alpha/10%D0%93.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/10%D0%94.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/10%D0%95.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/10%D0%96.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/10%D0%97.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/10%D0%98.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/10%D0%9A.pdf",
+                    }, {
+                            "https://1502.mskobr.ru/files/rasp/alpha/11%D0%93.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/11%D0%94.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/11%D0%95.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/11%D0%96.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/11%D0%97.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/11%D0%98.pdf",
+                            "https://1502.mskobr.ru/files/rasp/alpha/11%D0%9A.pdf"
+                    }
+            };
+
+        public static final String[][] timetablesindex = {
+                {"Г","Д","Е","Ж","З"}, {"Г", "Д", "Е", "Ж", "З", "И", "Ф", "Ч", "Ш",}, {"В", "Г", "Д", "Е", "Ж", "З", "И",}, {"Г", "Д", "Е", "Ж", "З", "И", "К",}, {"Г", "Д", "Е", "Ж", "З", "И", "К",}
+        };
+    }
+        public static class states
         {
 
             public static List<Long> _id = new ArrayList<>();
@@ -40,11 +87,11 @@ public class Const {
             public static final int WAITING_SEARCH = 6;
 
             public static final int CLASS_SELECTED[] = {7,8,9,10,11};
-
+            public static final int CLASS_TIMETABLE[] = {7,8,9,10,11};
         }
     }
     //db settings
-    public class database {
+    public static class database {
         public static final String BASENAME = "std.db";
         public static final String PATH = "";
 
