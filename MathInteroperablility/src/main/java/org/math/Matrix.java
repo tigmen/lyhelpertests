@@ -18,48 +18,56 @@ public class Matrix {
     public Integer getMatrixdeterminant()
     {
         System.out.println("matrix elements: ");
-        for(int i = 0; i < matrix.length; i++) {
-            System.out.println(Arrays.toString(matrix[i]));
-        }
-        int middlemanx = matrix.length;
-        int middlemany = matrix.length;
-        if(middlemanx == middlemany)
-        {
-            int result = 0;
-            for(int i = 0; i < middlemany; i++)
-            {
-                Integer[][] temp = new Integer[middlemanx-1][middlemany-1];
+        int result = 0;
+        if(matrix.length > 2) {
+            for (int i = 0; i < matrix.length; i++) {
+                System.out.println(Arrays.toString(matrix[i]));
+            }
+            int middlemanx = matrix.length;
+            int middlemany = matrix.length;
+            System.out.println(matrix.length);
+            for (int i = 0; i < middlemany; i++) {
+                Integer[][] temp = new Integer[middlemanx - 1][middlemany - 1];
                 int jnumerator = 0;
-                int knumerator = 0;
-                for(int j  = 0; j < middlemanx; j++)
-                {
-                    if(j == i) continue;
-                    for(int k = 0; k < middlemany; k++)
-                    {
-                        System.out.println(k + ","+j+" temp matrix elements: ");
-                        for(int p = 0; p < matrix.length-1; p++) {
+                for (int j = 0; j < middlemanx; j++) {
+                    int knumerator = 0;
+                    System.out.println("J");
+                    System.out.println("knum:" + knumerator);
+                    System.out.println("jnum:" + jnumerator);
+                    System.out.println("j:" + j);
+                    if (j == i) continue;
+                    for (int k = 0; k < middlemany; k++) {
+                        System.out.println("K");
+                        System.out.println("k:" + k);
+                        System.out.println("j:" + j);
+                        System.out.println("knum:" + knumerator);
+                        System.out.println("jnum:" + jnumerator);
+                        System.out.println("cur:" + matrix[k][j]);
+                        if (k == i) continue;
+//                        temp[jnumerator][knumerator] = matrix[k][j];
+                        temp[knumerator][jnumerator] = matrix[k][j];
+                        System.out.println(k + "," + j + " temp matrix elements: ");
+                        for (int p = 0; p < matrix.length - 1; p++) {
                             System.out.println(Arrays.toString(temp[p]));
                         }
-                        System.out.println("knum:"+knumerator);
-                        System.out.println("jnum:"+jnumerator);
-                        System.out.println("cur:"+matrix[k][j]);
-                        if(k == i) continue;
-//                        temp[jnumerator][knumerator] = matrix[k][j];
-                        temp[jnumerator][knumerator] = matrix[k][j];
                         knumerator++;
                     }
                     jnumerator++;
                 }
-                temp = new Integer[][]{{1, 1}, {1, 1}};
                 Matrix downdegreedmatrix = new Matrix(temp);
-                result+=Math.pow(-1d,i)*matrix[0][i]*downdegreedmatrix.getMatrixdeterminant();
+                System.out.println(i + "result:");
+                System.out.println(Math.pow(-1d, i));
+                System.out.println(matrix[0][i]);
+                result += Math.pow(-1d, i) * matrix[0][i] * downdegreedmatrix.getMatrixdeterminant();
+
+                System.out.println("matrix determinant: " + result);
             }
-            return result;
         }
-        else
+        else if(matrix.length == 2)
         {
-            System.out.println("Not interoperable");
-            return null;
+            result = matrix[0][0] * matrix[1][1] - matrix[0][1]*matrix[1][0];
         }
+        else result = matrix[0][0];
+        return result;
     }
 }
