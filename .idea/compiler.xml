@@ -8,7 +8,11 @@
         <outputRelativeToContentRoot value="true" />
         <module name="lyhelpertests" />
         <module name="lyhelper_bot" />
+        <module name="MathInteroperablility" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="ansmanager" target="19" />
+    </bytecodeTargetLevel>
   </component>
 </project>
