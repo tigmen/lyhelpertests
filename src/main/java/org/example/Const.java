@@ -6,8 +6,8 @@ import java.util.List;
 public class Const {
     //telegram settings
     public static class telegram {
-        public static final String USERNAME = "@lyceumgdz_bot";
-        public static final String TOKEN = "5331171819:AAHb7EFhG0ZaLmtaNmr6MdxHtRrcQmFtxmI";
+        public static final String USERNAME = "@lyceumhelperbot";
+        public static final String TOKEN = "5847776986:AAGrBIagucIVSvYi84xo7hqgMrQGLFZPq7I";
         public class msg_strings
         {
             public static final String START_TEXT = "Вас приветствует lyceumhelper, свободная площадка с обучающими материалами";
